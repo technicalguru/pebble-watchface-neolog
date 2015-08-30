@@ -39,11 +39,6 @@ static void bar_layer_draw(Layer *layer, GContext *ctx) {
 	for (int i=0; i<hours; i++) gpath_draw_filled(ctx, hourBars[i]);
 	for (int i=0; i<min10; i++)  gpath_draw_filled(ctx, min10Bars[i]);
 	for (int i=0; i<min; i++)  gpath_draw_filled(ctx, minBars[i]);
-
-	graphics_context_set_fill_color(ctx, GColorBlack);
-	for (int i=hours; i<11; i++) gpath_draw_filled(ctx, hourBars[i]);
-	for (int i=min10; i<5; i++)  gpath_draw_filled(ctx, min10Bars[i]);
-	for (int i=min;   i<9; i++)  gpath_draw_filled(ctx, minBars[i]);
 }
 
 /** Easily create the bars */
