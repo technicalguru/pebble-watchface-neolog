@@ -2,6 +2,7 @@
   "uuid": "a2d20d61-a94d-43b4-839b-0abb9ab0fcdc",
   "shortName": "neolog",
   "longName": "Neolog watchface",
+  "capabilities": [ "configurable" ],
   "companyName": "Ralph Schuster",
   "versionLabel": "1.2",
   "sdkVersion": "3",
@@ -10,7 +11,9 @@
     "watchface": true
   },
   "appKeys": {
-    "dummy": 0
+    "backgroundColor":  0,
+    "foregroundColor":  1,
+    "displayStatusBar": 2
   },
   "resources": {
     "media": []
