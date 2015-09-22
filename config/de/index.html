@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+	<head>
+    	<meta charset='utf-8'>
+		<title>Neolog Konfiguration</title>
+		<link rel="stylesheet" type="text/css" href="../bower_components/Slate/dist/css/slate.min.css">
+		<link rel="stylesheet" type="text/css" href="../css/style.css">
+	</head>
+
+	<body>
+		<div class="item-container">
+			<h1 class="title">Neolog Einstellungen</h1>
+		</div>
+		<div class="item-container">
+			<div class="item-container-content">
+				<div class="item">
+					Hier kannst Du die Einstellungen des Neolog-Watchface ver&auml;ndern.
+				</div>
+			</div>
+		</div>
+		<div class="item-container">
+			<div class="item-container-header">
+				Layout
+			</div>
+			<div class="item-container-content">
+				<label class="item">
+					Hintergrund
+					<input id="backgroundColorPicker" type="text" class="item-color item-color-sunny" value="0x000000">
+				</label>
+				<label class="item">
+					Vordergrund
+					<input id="foregroundColorPicker" type="text" class="item-color item-color-sunny" value="0xffffff">
+				</label>
+				<label class="item">
+					Statuszeile anzeigen
+					<input id="statusBarCheckbox" type="checkbox" class="item-checkbox" checked="checked">
+				</label>
+			</div>
+			<div class="item-container-header">
+				Die Einstellungen werden nur dann wirksam, wenn Du auf "Abspeichern" klickst.
+			</div>
+		</div>
+
+		<div class="item-container">
+			<div class="button-container">
+				<input id="submitButton" type="button" class="item-button" value="Speichern">
+			</div>
+		</div>
+		
+		<script src="../bower_components/Slate/dist/js/slate.min.js"></script>
+		<script src="../js/main.js"></script>
+	</body>
+</html>
+

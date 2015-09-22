@@ -1,11 +1,15 @@
 #include <pebble.h>
 
+#define KEY_CONFIG_BACKGROUND_COLOR  0
+#define KEY_CONFIG_FOREGROUND_COLOR  1
+#define KEY_CONFIG_STATUS_BAR        2
+
 /** Main screen window */
 static Window *mainWindow = NULL;
 /** A layer on the window for the bars */
 static Layer *barLayer    = NULL;
 /** The bars */
-static GPath* hourBars[11] = { NULL };
+static GPath* hourBars[12] = { NULL };
 static GPath* min10Bars[5] = { NULL };
 static GPath* minBars[9]   = { NULL };
 
@@ -26,13 +30,20 @@ static const GPathInfo BAR_PATH_INFO = {
 
 static time_t epoch_time;
 static struct tm *tm_p;
+static bool config_display_status_bar = false;
+static int config_background_color = 0x000000;
+static int config_foreground_color = 0xffffff;
 
 /** Handler: draw the bar layer */
 static void bar_layer_draw(Layer *layer, GContext *ctx) {
-	graphics_context_set_fill_color(ctx, GColorWhite);
+#ifdef PBL_COLOR
+	graphics_context_set_fill_color(ctx, GColorFromHEX(config_foreground_color));
+#elif PBL_BW
+	graphics_context_set_fill_color(ctx, config_foreground_color == 0 ? GColorBlack : GColorWhite);
+#endif
 	epoch_time = time( NULL );
 	tm_p = localtime( &epoch_time );
-	int hours = tm_p->tm_hour == 12 ? 12 : tm_p->tm_hour % 12;
+	int hours = tm_p->tm_hour == 12 ? 13 : tm_p->tm_hour % 12;
 	int min10 = tm_p->tm_min / 10;
 	int min = tm_p->tm_min % 10;
 
@@ -41,11 +52,31 @@ static void bar_layer_draw(Layer *layer, GContext *ctx) {
 	for (int i=0; i<min; i++)  gpath_draw_filled(ctx, minBars[i]);
 }
 
+static void status_layer_draw(Layer *layer, GContext *ctx) {
+	if (config_display_status_bar) {
+
+	}
+}
+
 /** Easily create the bars */
 static GPath* create_bar(int x, int y) {
 	GPath *rc = gpath_create(&BAR_PATH_INFO);
 	gpath_move_to(rc, GPoint(x, y));
 	return rc;
+}
+
+static void set_background_color(int color) {
+	config_background_color = color;
+#ifdef PBL_COLOR
+	GColor gcolor = GColorFromHEX(color);
+#elif PBL_BW
+	GColor gcolor = color == 0 ? GColorBlack : GColorWhite;
+#endif
+	window_set_background_color(mainWindow, gcolor);
+}
+
+static void set_foreground_color(int color) {
+	config_foreground_color = color;
 }
 
 /** Handler: Window was loaded to screen */
@@ -56,7 +87,7 @@ static void main_window_load(Window *window) {
 	layer_add_child(window_get_root_layer(mainWindow), barLayer);
 
 	// Create the bars as resources
-	for (int i=0; i<11; i++) {
+	for (int i=0; i<12; i++) {
 		int eGaps = i/3;
 		hourBars[i] = create_bar(HOUR_HPOS, 155-(i+1)*BAR_HEIGHT-eGaps*EXTERNAL_VGAP-i*INTERNAL_VGAP);
 	}
@@ -69,12 +100,26 @@ static void main_window_load(Window *window) {
 		minBars[i]   = create_bar(MIN_HPOS, 155-(i+1)*BAR_HEIGHT-eGaps*EXTERNAL_VGAP-i*INTERNAL_VGAP);
 	}
 
+	if (persist_read_int(KEY_CONFIG_BACKGROUND_COLOR)) {
+		int background_color = persist_read_int(KEY_CONFIG_BACKGROUND_COLOR);
+		set_background_color(background_color);
+	}
+
+	if (persist_read_int(KEY_CONFIG_FOREGROUND_COLOR)) {
+		int foreground_color = persist_read_int(KEY_CONFIG_FOREGROUND_COLOR);
+		set_foreground_color(foreground_color);
+	}
+
+	if (persist_read_bool(KEY_CONFIG_STATUS_BAR)) {
+		config_display_status_bar = persist_read_bool(KEY_CONFIG_STATUS_BAR);
+	}
+
 }
 
 /** Handler: Window was removed from screen */
 static void main_window_unload(Window *window) {
 	// Destroy the bars
-	for (int i=0; i<11; i++) gpath_destroy(hourBars[i]);
+	for (int i=0; i<12; i++) gpath_destroy(hourBars[i]);
 	for (int i=0; i<5; i++)  gpath_destroy(min10Bars[i]);
 	for (int i=0; i<9; i++)  gpath_destroy(minBars[i]);
 
@@ -92,12 +137,41 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 	update_time();
 }
 
+static void inbox_received_handler(DictionaryIterator *iter, void *context) {
+	Tuple *background_color_t = dict_find(iter, KEY_CONFIG_BACKGROUND_COLOR);
+	Tuple *foreground_color_t = dict_find(iter, KEY_CONFIG_FOREGROUND_COLOR);
+	Tuple *status_bar_t = dict_find(iter, KEY_CONFIG_STATUS_BAR);
+
+	if (background_color_t) {
+		int background_color = background_color_t->value->int32;
+		persist_write_int(KEY_CONFIG_BACKGROUND_COLOR, background_color);
+		set_background_color(background_color);
+	}
+
+	if (foreground_color_t) {
+		int foreground_color = foreground_color_t->value->int32;
+		persist_write_int(KEY_CONFIG_FOREGROUND_COLOR, foreground_color);
+		set_foreground_color(foreground_color);
+	}
+
+	if (status_bar_t) {
+		config_display_status_bar = status_bar_t->value->int8;
+		persist_write_int(KEY_CONFIG_STATUS_BAR, config_display_status_bar);
+	}
+
+	update_time();
+}
+
 /** App initialization */
 static void init() {
 
 	// Create main Window
 	mainWindow = window_create();
-	window_set_background_color(mainWindow, GColorBlack);
+#ifdef PBL_COLOR
+	window_set_background_color(mainWindow, GColorFromHEX(config_background_color));
+#elif PBL_BW
+	window_set_background_color(mainWindow, config_background_color == 0 ? GColorBlack : GColorWhite);
+#endif
 
 	// Set handlers to manage the elements inside the Window
 	window_set_window_handlers(mainWindow, (WindowHandlers) {
@@ -110,6 +184,9 @@ static void init() {
 
 	// Show the Window on the watch, with animated=true
 	window_stack_push(mainWindow, true);
+
+	app_message_register_inbox_received(inbox_received_handler);
+	app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 
 	// Make sure time is displayed right from the beginning
 	update_time();
