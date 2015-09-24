@@ -25,7 +25,7 @@ function loadOptions() {
 			$backgroundColorPicker[0].value = localStorage.backgroundColor;
 			$foregroundColorPicker[0].value = localStorage.foregroundColor;
 		} else {
-			$inverseCheckbox[0].checked = localStorage.backgroundColor == '#ffffff';
+			$inverseCheckbox[0].checked = localStorage.backgroundColor == '0xffffff';
 		}
 		$statusBarCheckbox[0].checked = localStorage.displayStatusBar === 'true';
 	}
