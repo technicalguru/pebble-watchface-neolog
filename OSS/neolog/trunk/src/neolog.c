@@ -12,9 +12,15 @@ static Layer *barLayer    = NULL;
 static GPath* hourBars[12] = { NULL };
 static GPath* min10Bars[5] = { NULL };
 static GPath* minBars[9]   = { NULL };
-/** A layer on the window for the battery */
+/** Layers for the battery */
 static Layer *batteryLayer    = NULL;
 static TextLayer *batteryTextLayer    = NULL;
+/** Layer for date */
+static TextLayer *dateTextLayer    = NULL;
+/** Layer for BT connection */
+static Layer *btLayer    = NULL;
+/** BT icon path */
+static GPath* btIcon = NULL;
 /** font for status bar */
 static GFont statusFont;
 
@@ -32,19 +38,69 @@ static const GPathInfo BAR_PATH_INFO = {
   .num_points = 4,
   .points = (GPoint []) {{0, 0}, {BAR_WIDTH, 0}, {BAR_WIDTH,BAR_HEIGHT}, {0,BAR_HEIGHT}}
 };
+/** Definition of BT icon */
+static const GPathInfo BT_OK_PATH_INFO = {
+  .num_points = 8,
+  .points = (GPoint []) {{0,2}, {5,7}, {3,9}, {2,9}, {2,0}, {3,0}, {5,2}, {0,7}}
+};
 
 static time_t epoch_time;
 static struct tm *tm_p;
-static bool config_display_status_bar = true;
+static bool config_display_status_bar = false;
 static int config_background_color = 0x000000;
 static int config_foreground_color = 0xffffff;
 static int charge_percent;
+static bool bt_connected = false;
 
 /** Main time function */
 static void update_time() {
 	layer_mark_dirty(barLayer);
 	layer_mark_dirty(batteryLayer);
 	layer_mark_dirty(text_layer_get_layer(batteryTextLayer));
+
+	if (config_display_status_bar) {
+		char *sys_locale = setlocale(LC_ALL, "");
+		epoch_time = time( NULL );
+		tm_p = localtime( &epoch_time );
+		static char s_date_buffer[32];
+		if (strcmp("de_DE", sys_locale) == 0) {
+			snprintf(s_date_buffer, sizeof(s_date_buffer), "%02d.%02d.%02d", tm_p->tm_mday, tm_p->tm_mon+1, tm_p->tm_year-100);
+		} else if (strcmp("fr_FR", sys_locale) == 0) {
+			snprintf(s_date_buffer, sizeof(s_date_buffer), "%02d.%02d.%02d", tm_p->tm_mday, tm_p->tm_mon+1, tm_p->tm_year-100);
+		} else if (strcmp("es_ES", sys_locale) == 0) {
+			snprintf(s_date_buffer, sizeof(s_date_buffer), "%02d.%02d.%02d", tm_p->tm_mday, tm_p->tm_mon+1, tm_p->tm_year-100);
+		} else { // en_US and ch_CN
+			snprintf(s_date_buffer, sizeof(s_date_buffer), "%02d/%02d/%02d", tm_p->tm_mon+1, tm_p->tm_mday, tm_p->tm_year-100);
+		}
+		text_layer_set_text(dateTextLayer, s_date_buffer);
+	} else {
+		text_layer_set_text(dateTextLayer, "");
+	}
+
+	layer_mark_dirty(text_layer_get_layer(dateTextLayer));
+	layer_mark_dirty(btLayer);
+}
+
+/** Handler: the bluetooth layer draw */
+static void bluetooth_layer_draw(Layer *layer, GContext *ctx) {
+	if (config_display_status_bar) {
+#ifdef PBL_COLOR
+		if (bt_connected) {
+			graphics_context_set_stroke_color(ctx, GColorFromHEX(config_foreground_color));
+		} else {
+			graphics_context_set_stroke_color(ctx, GColorRed);
+		}
+		gpath_draw_outline_open(ctx, btIcon);
+#elif PBL_BW
+		if (bt_connected) {
+			graphics_context_set_stroke_color(ctx, config_foreground_color == 0 ? GColorBlack : GColorWhite);
+			for (unsigned int i=0; i<BT_OK_PATH_INFO.num_points-1; i++) {
+				graphics_draw_line(ctx, BT_OK_PATH_INFO.points[i], BT_OK_PATH_INFO.points[i+1]);
+			}
+		}
+#endif
+
+	}
 }
 
 /** Handler: draw the bar layer */
@@ -67,7 +123,7 @@ static void bar_layer_draw(Layer *layer, GContext *ctx) {
 
 /** Handler: the status layer draw */
 static void battery_layer_draw(Layer *layer, GContext *ctx) {
-//	if (config_display_status_bar) {
+	if (config_display_status_bar) {
 #ifdef PBL_COLOR
 		if (charge_percent > 20) {
 			graphics_context_set_fill_color(ctx, GColorFromHEX(config_foreground_color));
@@ -101,7 +157,9 @@ static void battery_layer_draw(Layer *layer, GContext *ctx) {
 		snprintf(s_battery_buffer, sizeof(s_battery_buffer), "%d %%", charge_percent);
 		text_layer_set_text(batteryTextLayer, s_battery_buffer);
 
-//	}
+	} else {
+		text_layer_set_text(batteryTextLayer, "");
+	}
 }
 
 /** Easily create the bars */
@@ -125,8 +183,10 @@ static void set_foreground_color(int color) {
 	config_foreground_color = color;
 #ifdef PBL_COLOR
 	text_layer_set_text_color(batteryTextLayer, GColorFromHEX(color));
+	text_layer_set_text_color(dateTextLayer, GColorFromHEX(color));
 #elif PBL_BW
 	text_layer_set_text_color(batteryTextLayer, color == 0 ? GColorBlack : GColorWhite);
+	text_layer_set_text_color(dateTextLayer, color == 0 ? GColorBlack : GColorWhite);
 #endif
 }
 
@@ -139,22 +199,38 @@ static void battery_handler(BatteryChargeState new_state) {
 
 /** Handler: Window was loaded to screen */
 static void main_window_load(Window *window) {
+	// Custom Font
+	statusFont = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_LUCIDA_10));
+
 	// Create the graphics layer
 	barLayer = layer_create(GRect(0, 0, 144, 168));
 	layer_set_update_proc(barLayer, bar_layer_draw);
 	layer_add_child(window_get_root_layer(mainWindow), barLayer);
 
-	batteryLayer = layer_create(GRect(115, 2, 25, 8));
+	// Battery Layer
+	batteryLayer = layer_create(GRect(120, 2, 20, 8));
 	layer_set_update_proc(batteryLayer, battery_layer_draw);
 	layer_add_child(window_get_root_layer(mainWindow), batteryLayer);
 
-	batteryTextLayer = text_layer_create(GRect(80, 0, 30, 10));
+	// Battery Text Layer
+	batteryTextLayer = text_layer_create(GRect(85, 0, 30, 10));
 	text_layer_set_background_color(batteryTextLayer, GColorClear);
-	statusFont = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_LUCIDA_10));
 	text_layer_set_font(batteryTextLayer, statusFont);
-	//text_layer_set_font(batteryTextLayer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
 	text_layer_set_text_alignment(batteryTextLayer, GTextAlignmentRight);
 	layer_add_child(window_get_root_layer(mainWindow), text_layer_get_layer(batteryTextLayer));
+
+	// Date Layer
+	dateTextLayer = text_layer_create(GRect(3, 0, 50, 10));
+	text_layer_set_background_color(dateTextLayer, GColorClear);
+	text_layer_set_font(dateTextLayer, statusFont);
+	text_layer_set_text_alignment(dateTextLayer, GTextAlignmentLeft);
+	layer_add_child(window_get_root_layer(mainWindow), text_layer_get_layer(dateTextLayer));
+
+	// Bluetooth Layer
+	btLayer = layer_create(GRect(73, 1, 8, 10));
+	btIcon = gpath_create(&BT_OK_PATH_INFO);
+	layer_set_update_proc(btLayer, bluetooth_layer_draw);
+	layer_add_child(window_get_root_layer(mainWindow), btLayer);
 
 	// Create the bars as resources
 	for (int i=0; i<12; i++) {
@@ -193,16 +269,25 @@ static void main_window_unload(Window *window) {
 	for (int i=0; i<5; i++)  gpath_destroy(min10Bars[i]);
 	for (int i=0; i<9; i++)  gpath_destroy(minBars[i]);
 
+	// Destroy fonts
+	fonts_unload_custom_font(statusFont);
+
 	// Destroy the layers
 	layer_destroy(barLayer);
 	layer_destroy(batteryLayer);
-	fonts_unload_custom_font(statusFont);
+	layer_destroy(btLayer);
 	text_layer_destroy(batteryTextLayer);
+	text_layer_destroy(dateTextLayer);
 }
 
 /** Handler: time changed */
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 	update_time();
+}
+
+static void bt_connection_handler(bool connected) {
+	bt_connected = connected;
+	layer_mark_dirty(btLayer);
 }
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
@@ -259,6 +344,12 @@ static void init() {
 
 	// Battery service registration
 	battery_state_service_subscribe(battery_handler);
+	BatteryChargeState bs = battery_state_service_peek();
+	charge_percent = bs.charge_percent;
+
+	// Bluetooth status
+	bluetooth_connection_service_subscribe(bt_connection_handler);
+	bt_connected = bluetooth_connection_service_peek();
 
 	// Make sure time is displayed right from the beginning
 	update_time();
