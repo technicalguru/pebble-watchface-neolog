@@ -4,14 +4,14 @@ Pebble.addEventListener('ready', function(e) {
 });
 
 Pebble.addEventListener('showConfiguration', function(e) {
-	var watch;
-	if (Pebble.getActiveWatchInfo) {
+	var watch = null;
+	if (typeof Pebble.getActiveWatchInfo == 'function') {
 		watch = Pebble.getActiveWatchInfo();
 	} else {
 		watch = {
-			platform = 'aplite';
-			language = 'en_US';
-		}
+			platform : 'aplite',
+			language : 'en_US'
+		};
 	}
 
 	// Show config page
@@ -26,7 +26,7 @@ Pebble.addEventListener('showConfiguration', function(e) {
 		}
 	}
 
-	var url = 'http://pebble.ralph-schuster.eu/neolog/1.2/config/'+lang+file;
+	var url = 'http://pebble.ralph-schuster.eu/neolog/2.0/config/'+lang+file;
 	console.log('Opening config URL: '+url);
 	Pebble.openURL(url);
 });

@@ -4,7 +4,7 @@
   "longName": "Neolog watchface",
   "capabilities": [ "configurable" ],
   "companyName": "Ralph Schuster",
-  "versionLabel": "1.2",
+  "versionLabel": "2.0",
   "sdkVersion": "3",
   "targetPlatforms": ["aplite", "basalt"],
   "watchapp": {
@@ -16,6 +16,12 @@
     "displayStatusBar": 2
   },
   "resources": {
-    "media": []
+    "media": [
+    	{
+    		"type": "font",
+    		"name": "LUCIDA_10",
+    		"file": "fonts/LucidaSansRegular_10.ttf"
+    	}
+    ]
   }
 }
