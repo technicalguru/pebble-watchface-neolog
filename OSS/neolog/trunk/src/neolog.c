@@ -27,12 +27,12 @@ static GFont statusFont;
 #define BAR_WIDTH     40
 #define BAR_HEIGHT     6
 
-static const int INTERNAL_VGAP =  4;
-static const int EXTERNAL_VGAP =  7; // (additional to internal)
-static const int HOUR_HPOS     =  6;
-static const int MIN10_HPOS    = 52;
-static const int MIN_HPOS      = 98;
-
+static const int INTERNAL_VGAP =  4; // gap between bars
+static const int EXTERNAL_VGAP =  7; // gap between groups (additional to internal)
+static const int HOUR_HPOS     =  6; // horizontal position of hour bars
+static const int MIN10_HPOS    = 52; // horizontal position of 10min bars
+static const int MIN_HPOS      = 98; // horizontal position of minutes
+static const int VPOS          = 162; // The lower bound of the bars
 /** Definition of a single bar */
 static const GPathInfo BAR_PATH_INFO = {
   .num_points = 4,
@@ -87,10 +87,10 @@ static void bluetooth_layer_draw(Layer *layer, GContext *ctx) {
 #ifdef PBL_COLOR
 		if (bt_connected) {
 			graphics_context_set_stroke_color(ctx, GColorFromHEX(config_foreground_color));
+			gpath_draw_outline_open(ctx, btIcon);
 		} else {
-			graphics_context_set_stroke_color(ctx, GColorRed);
+//			graphics_context_set_stroke_color(ctx, GColorRed);
 		}
-		gpath_draw_outline_open(ctx, btIcon);
 #elif PBL_BW
 		if (bt_connected) {
 			graphics_context_set_stroke_color(ctx, config_foreground_color == 0 ? GColorBlack : GColorWhite);
@@ -227,7 +227,7 @@ static void main_window_load(Window *window) {
 	layer_add_child(window_get_root_layer(mainWindow), text_layer_get_layer(dateTextLayer));
 
 	// Bluetooth Layer
-	btLayer = layer_create(GRect(73, 1, 8, 10));
+	btLayer = layer_create(GRect(68, 1, 8, 10));
 	btIcon = gpath_create(&BT_OK_PATH_INFO);
 	layer_set_update_proc(btLayer, bluetooth_layer_draw);
 	layer_add_child(window_get_root_layer(mainWindow), btLayer);
@@ -235,15 +235,15 @@ static void main_window_load(Window *window) {
 	// Create the bars as resources
 	for (int i=0; i<12; i++) {
 		int eGaps = i/3;
-		hourBars[i] = create_bar(HOUR_HPOS, 155-(i+1)*BAR_HEIGHT-eGaps*EXTERNAL_VGAP-i*INTERNAL_VGAP);
+		hourBars[i] = create_bar(HOUR_HPOS, VPOS-(i+1)*BAR_HEIGHT-eGaps*EXTERNAL_VGAP-i*INTERNAL_VGAP);
 	}
 	for (int i=0; i<5; i++) {
 		int eGaps = i/3;
-		min10Bars[i] = create_bar(MIN10_HPOS, 155-(i+1)*BAR_HEIGHT-eGaps*EXTERNAL_VGAP-i*INTERNAL_VGAP);
+		min10Bars[i] = create_bar(MIN10_HPOS, VPOS-(i+1)*BAR_HEIGHT-eGaps*EXTERNAL_VGAP-i*INTERNAL_VGAP);
 	}
 	for (int i=0; i<9; i++) {
 		int eGaps = i/3;
-		minBars[i]   = create_bar(MIN_HPOS, 155-(i+1)*BAR_HEIGHT-eGaps*EXTERNAL_VGAP-i*INTERNAL_VGAP);
+		minBars[i]   = create_bar(MIN_HPOS, VPOS-(i+1)*BAR_HEIGHT-eGaps*EXTERNAL_VGAP-i*INTERNAL_VGAP);
 	}
 
 	if (persist_read_int(KEY_CONFIG_BACKGROUND_COLOR)) {
