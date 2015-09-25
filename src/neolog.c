@@ -47,8 +47,8 @@ static const GPathInfo BT_OK_PATH_INFO = {
 static time_t epoch_time;
 static struct tm *tm_p;
 static bool config_display_status_bar = false;
-static int config_background_color = 0x000000;
-static int config_foreground_color = 0xffffff;
+static int config_background_color;
+static int config_foreground_color;
 static int charge_percent;
 static bool bt_connected = false;
 
@@ -317,7 +317,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
 /** App initialization */
 static void init() {
-
 	// Create main Window
 	mainWindow = window_create();
 #ifdef PBL_COLOR
