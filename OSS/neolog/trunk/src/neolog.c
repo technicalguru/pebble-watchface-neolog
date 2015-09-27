@@ -317,6 +317,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
 /** App initialization */
 static void init() {
+
 	// Create main Window
 	mainWindow = window_create();
 #ifdef PBL_COLOR
