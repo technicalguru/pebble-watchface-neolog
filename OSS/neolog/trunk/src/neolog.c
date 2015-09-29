@@ -112,7 +112,7 @@ static void bar_layer_draw(Layer *layer, GContext *ctx) {
 #endif
 	epoch_time = time( NULL );
 	tm_p = localtime( &epoch_time );
-	int hours = tm_p->tm_hour == 12 ? 13 : tm_p->tm_hour % 12;
+	int hours = tm_p->tm_hour == 12 ? 12 : tm_p->tm_hour % 12;
 	int min10 = tm_p->tm_min / 10;
 	int min = tm_p->tm_min % 10;
 
