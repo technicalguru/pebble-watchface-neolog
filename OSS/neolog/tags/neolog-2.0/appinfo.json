@@ -1,0 +1,27 @@
+{
+  "uuid": "a2d20d61-a94d-43b4-839b-0abb9ab0fcdc",
+  "shortName": "neolog",
+  "longName": "Neolog watchface",
+  "capabilities": [ "configurable" ],
+  "companyName": "Ralph Schuster",
+  "versionLabel": "2.0",
+  "sdkVersion": "3",
+  "targetPlatforms": ["aplite", "basalt"],
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {
+    "backgroundColor":  0,
+    "foregroundColor":  1,
+    "displayStatusBar": 2
+  },
+  "resources": {
+    "media": [
+    	{
+    		"type": "font",
+    		"name": "LUCIDA_10",
+    		"file": "fonts/LucidaSansRegular_10.ttf"
+    	}
+    ]
+  }
+}
