@@ -47,8 +47,8 @@ static const GPathInfo BT_OK_PATH_INFO = {
 static time_t epoch_time;
 static struct tm *tm_p;
 static bool config_display_status_bar = false;
-static int config_background_color;
-static int config_foreground_color;
+static int config_background_color = 0x000000;
+static int config_foreground_color = 0xffffff;
 static int charge_percent;
 static bool bt_connected = false;
 
@@ -112,7 +112,7 @@ static void bar_layer_draw(Layer *layer, GContext *ctx) {
 #endif
 	epoch_time = time( NULL );
 	tm_p = localtime( &epoch_time );
-	int hours = tm_p->tm_hour == 12 ? 12 : tm_p->tm_hour % 12;
+	int hours = tm_p->tm_hour == 12 ? 13 : tm_p->tm_hour % 12;
 	int min10 = tm_p->tm_min / 10;
 	int min = tm_p->tm_min % 10;
 
@@ -246,24 +246,18 @@ static void main_window_load(Window *window) {
 		minBars[i]   = create_bar(MIN_HPOS, VPOS-(i+1)*BAR_HEIGHT-eGaps*EXTERNAL_VGAP-i*INTERNAL_VGAP);
 	}
 
-	if (persist_exists(KEY_CONFIG_BACKGROUND_COLOR)) {
+	if (persist_read_int(KEY_CONFIG_BACKGROUND_COLOR)) {
 		int background_color = persist_read_int(KEY_CONFIG_BACKGROUND_COLOR);
 		set_background_color(background_color);
-	} else {
-		set_background_color(0x000000);
 	}
 
-	if (persist_exists(KEY_CONFIG_FOREGROUND_COLOR)) {
+	if (persist_read_int(KEY_CONFIG_FOREGROUND_COLOR)) {
 		int foreground_color = persist_read_int(KEY_CONFIG_FOREGROUND_COLOR);
 		set_foreground_color(foreground_color);
-	} else {
-		set_foreground_color(0xffffff);
 	}
 
-	if (persist_exists(KEY_CONFIG_STATUS_BAR)) {
+	if (persist_read_bool(KEY_CONFIG_STATUS_BAR)) {
 		config_display_status_bar = persist_read_bool(KEY_CONFIG_STATUS_BAR);
-	} else {
-		config_display_status_bar = false;
 	}
 
 }
@@ -323,6 +317,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
 /** App initialization */
 static void init() {
+
 	// Create main Window
 	mainWindow = window_create();
 #ifdef PBL_COLOR
